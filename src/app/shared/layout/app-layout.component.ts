@@ -26,7 +26,7 @@ export class AppLayoutComponent {
       icon: 'manage_accounts',
       items: [
         { label: 'Mis Vehículos',      route: '/app/acceso-registro/gestionar-vehiculos',  roles: ['cliente'] },
-        { label: 'Registrar Taller',   route: '/app/acceso-registro/registrar-taller',     roles: ['taller'] },
+        { label: 'Registrar Taller',   route: '/app/acceso-registro/registrar-taller',     roles: ['cliente', 'taller'] },
         { label: 'Gestionar Usuarios', route: '/app/acceso-registro/gestionar-usuarios',   roles: ['admin'] },
         { label: 'Aprobar Talleres',   route: '/app/acceso-registro/aprobar-talleres',     roles: ['admin'] },
       ],

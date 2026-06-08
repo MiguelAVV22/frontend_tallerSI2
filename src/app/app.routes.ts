@@ -52,7 +52,7 @@ export const routes: Routes = [
 
       // ── Acceso y Registro ──────────────────────────────────
       { path: 'acceso-registro/cambiar-contrasena',  component: CambiarContrasenaComponent },
-      { path: 'acceso-registro/registrar-taller',    component: RegistrarTallerComponent,    canActivate: [roleGuard], data: { roles: ['taller'] } },
+      { path: 'acceso-registro/registrar-taller',    component: RegistrarTallerComponent,    canActivate: [roleGuard], data: { roles: ['cliente', 'taller'] } },
       { path: 'acceso-registro/aprobar-talleres',    component: AprobarTalleresComponent,    canActivate: [roleGuard], data: { roles: ['admin'] } },
       { path: 'acceso-registro/gestionar-usuarios',  component: GestionarUsuariosComponent,  canActivate: [roleGuard], data: { roles: ['admin'] } },
       { path: 'acceso-registro/gestionar-vehiculos', component: DashboardHomeComponent,      canActivate: [roleGuard], data: { roles: ['cliente'] } },
