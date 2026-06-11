@@ -3,12 +3,14 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../acceso-registro/auth.service';
 
+import { DashboardOperacionalComponent } from './dashboard-operacional.component';
+
 interface QuickLink { icon: string; label: string; route: string; bg: string; color: string; }
 
 @Component({
   selector: 'app-dashboard-home',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, DashboardOperacionalComponent],
   template: `
     <!-- Bienvenida -->
     <div class="welcome-row">
@@ -31,6 +33,13 @@ interface QuickLink { icon: string; label: string; route: string; bg: string; co
         </a>
       }
     </div>
+
+    <!-- Dashboard Operacional para Taller -->
+    @if (role === 'taller') {
+      <div style="margin-top: 2rem;">
+        <app-dashboard-operacional></app-dashboard-operacional>
+      </div>
+    }
   `,
   styles: [`
     .welcome-row {

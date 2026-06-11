@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MetricasService, TecnicoDesempenoResponse } from '../../dashboard/metricas.service';
+import { TecnicoService, TallerInfoResponse } from '../../talleres-tecnicos/tecnico.service';
 
 @Component({
     selector: 'app-desempeno-tecnicos',
@@ -23,7 +24,10 @@ export class DesempenoTecnicosComponent implements OnInit {
     searchText = '';
     selectedStateFilter = '';
 
-    constructor(private metricasSvc: MetricasService) { }
+    constructor(
+        private metricasSvc: MetricasService,
+        private tecnicoService: TecnicoService
+    ) { }
 
     ngOnInit(): void {
         this.cargarDesempeno();
@@ -34,20 +38,28 @@ export class DesempenoTecnicosComponent implements OnInit {
         this.errorMsg = '';
         this.isApproved = true;
 
-        this.metricasSvc.getDesempenoTecnicos(this.selectedPeriodo).subscribe({
-            next: (data) => {
-                this.tecnicos = data;
-                this.applyFilters();
-                this.loading = false;
+        this.tecnicoService.getMiTaller().subscribe({
+            next: (taller: TallerInfoResponse) => {
+                this.metricasSvc.getDesempenoTecnicos(taller.id, this.selectedPeriodo).subscribe({
+                    next: (data) => {
+                        this.tecnicos = data;
+                        this.applyFilters();
+                        this.loading = false;
+                    },
+                    error: (err) => {
+                        this.loading = false;
+                        if (err.status === 403) {
+                            this.isApproved = false;
+                            this.errorMsg = 'Tu taller aún no está aprobado o no tienes permisos para visualizar métricas.';
+                        } else {
+                            this.errorMsg = err.error?.detail ?? 'No se pudo cargar la evaluación de los técnicos.';
+                        }
+                    }
+                });
             },
             error: (err) => {
                 this.loading = false;
-                if (err.status === 403) {
-                    this.isApproved = false;
-                    this.errorMsg = 'Tu taller aún no está aprobado o no tienes permisos para visualizar métricas.';
-                } else {
-                    this.errorMsg = err.error?.detail ?? 'No se pudo cargar la evaluación de los técnicos.';
-                }
+                this.errorMsg = err.error?.detail ?? 'No se pudo obtener la información de tu taller.';
             }
         });
     }

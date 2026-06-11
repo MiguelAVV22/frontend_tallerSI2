@@ -1,0 +1,287 @@
+<div class="desempeno-container">
+  <!-- Header Section -->
+  <div class="header-row">
+    <div>
+      <h1 class="page-title">Desempeño de Técnicos</h1>
+      <p class="page-sub">Monitorea el rendimiento, velocidad y satisfacción de los técnicos de tu taller</p>
+    </div>
+    
+    <!-- Period Selector -->
+    <div class="period-selector">
+      <button 
+        [class.active]="selectedPeriodo === 'semana'" 
+        (click)="changePeriodo('semana')">
+        Semana
+      </button>
+      <button 
+        [class.active]="selectedPeriodo === 'mes'" 
+        (click)="changePeriodo('mes')">
+        Mes
+      </button>
+      <button 
+        [class.active]="selectedPeriodo === 'trimestre'" 
+        (click)="changePeriodo('trimestre')">
+        Trimestre
+      </button>
+      <button 
+        [class.active]="selectedPeriodo === 'ano'" 
+        (click)="changePeriodo('ano')">
+        Año
+      </button>
+    </div>
+  </div>
+
+  <!-- Error / Approval State -->
+  <div *ngIf="!isApproved" class="alert alert-warning">
+    <span class="material-symbols-outlined">warning</span>
+    <div class="alert-content">
+      <strong>Taller No Aprobado</strong>
+      <p>{{ errorMsg }}</p>
+    </div>
+  </div>
+
+  <div *ngIf="errorMsg && isApproved" class="alert alert-danger">
+    <span class="material-symbols-outlined">error</span>
+    <div class="alert-content">
+      <strong>Error al cargar información</strong>
+      <p>{{ errorMsg }}</p>
+    </div>
+    <button class="retry-btn" (click)="cargarDesempeno()">Reintentar</button>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Cargando métricas de desempeño...</p>
+  </div>
+
+  <!-- Main Content when loaded and approved -->
+  <div *ngIf="!loading && isApproved && !errorMsg">
+    
+    <!-- Summary Cards -->
+    <div class="summary-grid">
+      <!-- Card: Promedio General -->
+      <div class="summary-card">
+        <div class="card-header-icon bg-primary">
+          <span class="material-symbols-outlined">trending_up</span>
+        </div>
+        <div class="card-details">
+          <span class="card-value">{{ promedioDesempenoGeneral }} / 100</span>
+          <span class="card-label">Rendimiento Promedio</span>
+        </div>
+      </div>
+
+      <!-- Card: Total Servicios -->
+      <div class="summary-card">
+        <div class="card-header-icon bg-success">
+          <span class="material-symbols-outlined">handyman</span>
+        </div>
+        <div class="card-details">
+          <span class="card-value">{{ totalServiciosTaller }}</span>
+          <span class="card-label">Servicios Atendidos</span>
+        </div>
+      </div>
+
+      <!-- Card: Tecnicos Activos -->
+      <div class="summary-card">
+        <div class="card-header-icon bg-warning">
+          <span class="material-symbols-outlined">group</span>
+        </div>
+        <div class="card-details">
+          <span class="card-value">{{ totalTecnicosActivos }}</span>
+          <span class="card-label">Técnicos Activos</span>
+        </div>
+      </div>
+
+      <!-- Card: Mejor Tecnico -->
+      <div class="summary-card highlight" *ngIf="mejorTecnico">
+        <div class="card-header-icon bg-gold">
+          <span class="material-symbols-outlined">military_tech</span>
+        </div>
+        <div class="card-details">
+          <span class="card-value text-truncate">{{ mejorTecnico.nombre }}</span>
+          <span class="card-label">Líder de Desempeño (★{{ mejorTecnico.calificacion_promedio }})</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="filter-bar">
+      <div class="search-input-wrapper">
+        <span class="material-symbols-outlined search-icon">search</span>
+        <input 
+          type="text" 
+          placeholder="Buscar técnico por nombre o especialidad..." 
+          [(ngModel)]="searchText"
+          (input)="applyFilters()"
+          class="search-input"
+        />
+      </div>
+
+      <div class="select-wrapper">
+        <select 
+          [(ngModel)]="selectedStateFilter" 
+          (change)="applyFilters()" 
+          class="state-select">
+          <option value="">Todos los estados</option>
+          <option value="disponible">Disponible</option>
+          <option value="ocupado">Ocupado</option>
+          <option value="inactivo">Inactivo</option>
+        </select>
+      </div>
+
+      <button 
+        *ngIf="searchText || selectedStateFilter" 
+        (click)="limpiarFiltros()" 
+        class="clear-btn">
+        Limpiar Filtros
+      </button>
+    </div>
+
+    <!-- No data fallback -->
+    <div *ngIf="filteredTecnicos.length === 0" class="empty-state">
+      <span class="material-symbols-outlined empty-icon">person_search</span>
+      <h3>No se encontraron técnicos</h3>
+      <p>Intenta cambiar los filtros de búsqueda o el periodo seleccionado.</p>
+    </div>
+
+    <!-- Two Column Dashboard Layout -->
+    <div *ngIf="filteredTecnicos.length > 0" class="dashboard-layout">
+      
+      <!-- Left Column: List -->
+      <div class="list-column">
+        <div class="list-header">
+          <span>Lista de Técnicos ({{ filteredTecnicos.length }})</span>
+        </div>
+        
+        <div class="tecnicos-list">
+          <div 
+            *ngFor="let t of filteredTecnicos" 
+            class="tecnico-item"
+            [class.selected]="selectedTecnico?.tecnico_id === t.tecnico_id"
+            (click)="selectTecnico(t)">
+            
+            <div class="avatar-col">
+              <div class="avatar">{{ getInicial(t.nombre) }}</div>
+            </div>
+            
+            <div class="info-col">
+              <span class="tecnico-name">{{ t.nombre }}</span>
+              <span class="tecnico-spec">{{ t.especialidad }}</span>
+            </div>
+
+            <div class="badge-col">
+              <span class="status-badge" [class]="t.estado">
+                {{ t.estado }}
+              </span>
+              <span class="score-badge">
+                {{ t.puntaje_desempeno }} pts
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Detail Visualizer -->
+      <div class="detail-column" *ngIf="selectedTecnico">
+        <div class="detail-card">
+          <!-- Profile Banner -->
+          <div class="profile-banner">
+            <div class="avatar-large">{{ getInicial(selectedTecnico.nombre) }}</div>
+            <div class="profile-info">
+              <h2>{{ selectedTecnico.nombre }}</h2>
+              <p class="specialty">{{ selectedTecnico.especialidad }}</p>
+              <div class="ranking-badge" [class.top-1]="selectedTecnico.posicion_ranking === 1">
+                🏆 Puesto #{{ selectedTecnico.posicion_ranking }} en el Taller
+              </div>
+            </div>
+          </div>
+
+          <!-- Performance Metric Gauges -->
+          <div class="metrics-section">
+            <h3>Indicadores Clave de Desempeño</h3>
+            
+            <!-- Gauge 1: Puntaje de Desempeño -->
+            <div class="metric-progress-wrapper">
+              <div class="metric-label-row">
+                <span>Puntaje de Rendimiento</span>
+                <span class="value-highlight">{{ selectedTecnico.puntaje_desempeno }} / 100</span>
+              </div>
+              <div class="progress-bar-bg">
+                <div 
+                  class="progress-bar-fill primary-fill" 
+                  [style.width.%]="selectedTecnico.puntaje_desempeno">
+                </div>
+              </div>
+            </div>
+
+            <!-- Gauge 2: Cumplimiento SLA -->
+            <div class="metric-progress-wrapper">
+              <div class="metric-label-row">
+                <span>Cumplimiento de SLA (Tiempos de Atención)</span>
+                <span class="value-highlight">{{ selectedTecnico.porcentaje_cumplimiento }}%</span>
+              </div>
+              <div class="progress-bar-bg">
+                <div 
+                  class="progress-bar-fill success-fill" 
+                  [style.width.%]="selectedTecnico.porcentaje_cumplimiento">
+                </div>
+              </div>
+            </div>
+
+            <!-- Gauge 3: Calificacion -->
+            <div class="metric-progress-wrapper">
+              <div class="metric-label-row">
+                <span>Calificación Promedio de Clientes</span>
+                <span class="value-highlight">★ {{ selectedTecnico.calificacion_promedio }} / 5.0</span>
+              </div>
+              <div class="progress-bar-bg">
+                <div 
+                  class="progress-bar-fill warning-fill" 
+                  [style.width.%]="(selectedTecnico.calificacion_promedio / 5) * 100">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Secondary Grid Stats -->
+          <div class="detail-stats-grid">
+            <div class="stat-box">
+              <span class="material-symbols-outlined stat-box-icon">schedule</span>
+              <div class="stat-box-content">
+                <span class="stat-box-value">{{ selectedTecnico.tiempo_promedio_llegada_min }} min</span>
+                <span class="stat-box-label">Tiempo Promedio Llegada</span>
+              </div>
+            </div>
+
+            <div class="stat-box">
+              <span class="material-symbols-outlined stat-box-icon">hourglass_empty</span>
+              <div class="stat-box-content">
+                <span class="stat-box-value">{{ selectedTecnico.tiempo_promedio_reparacion_min }} min</span>
+                <span class="stat-box-label">Tiempo Promedio Reparación</span>
+              </div>
+            </div>
+
+            <div class="stat-box">
+              <span class="material-symbols-outlined stat-box-icon">build_circle</span>
+              <div class="stat-box-content">
+                <span class="stat-box-value">{{ selectedTecnico.servicios_atendidos }}</span>
+                <span class="stat-box-label">Servicios Asignados</span>
+              </div>
+            </div>
+
+            <div class="stat-box">
+              <span class="material-symbols-outlined stat-box-icon">task_alt</span>
+              <div class="stat-box-content">
+                <span class="stat-box-value">{{ selectedTecnico.servicios_finalizados }}</span>
+                <span class="stat-box-label">Servicios Completados</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
