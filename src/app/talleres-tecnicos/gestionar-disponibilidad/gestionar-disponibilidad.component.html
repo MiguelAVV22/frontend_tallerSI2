@@ -1,10 +1,10 @@
-<!-- CU16 - Gestionar Disponibilidad -->
+<!-- CU16 - Gestionar Disponibilidad y Ubicación del Taller -->
 
 <!-- ── Encabezado ─────────────────────────────────────── -->
 <div class="page-header">
   <div>
-    <h1 class="page-title">Gestionar Disponibilidad</h1>
-    <p class="page-sub">CU16 · Controla si tu taller acepta solicitudes de asistencia</p>
+    <h1 class="page-title">Gestionar Disponibilidad y Ubicación</h1>
+    <p class="page-sub">CU16 · Controla la disponibilidad y actualiza las coordenadas geográficas de tu taller</p>
   </div>
   <button class="btn-secondary" (click)="cargar()" [disabled]="loading">
     <span class="material-symbols-outlined" style="font-size:16px;margin-right:6px">refresh</span>
@@ -33,6 +33,11 @@
       <div>
         <div class="info-card-title">{{ taller.nombre }}</div>
         <div class="info-card-sub">{{ taller.direccion }}</div>
+        @if (taller.latitud && taller.longitud) {
+          <div style="font-size: 0.8rem; color: #2563EB; margin-top: 0.25rem; font-weight: 500;">
+            📍 Coordenadas: {{ taller.latitud }}, {{ taller.longitud }}
+          </div>
+        }
       </div>
       <span class="badge" [ngClass]="estadoBadge(taller.estado)" style="margin-left:auto">
         {{ taller.estado }}
@@ -59,79 +64,138 @@
     </div>
   </div>
 
-  <!-- ── Panel de disponibilidad ────────────────────── -->
-  <div class="form-card" style="max-width:580px">
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1.5rem;">
+    
+    <!-- ── Panel 1: Estado de disponibilidad ────────────────────── -->
+    <div class="form-card" style="max-width: 100%;">
+      <h2 style="font-size:1rem;font-weight:700;color:var(--text);margin-bottom:1.25rem;display:flex;align-items:center;gap:0.5rem;">
+        <span class="material-symbols-outlined" style="color:var(--primary)">power_settings_new</span>
+        Estado de Disponibilidad
+      </h2>
 
-    <h2 style="font-size:1rem;font-weight:700;color:var(--text);margin-bottom:1.25rem">
-      Estado de disponibilidad
-    </h2>
+      <!-- Toggle visual -->
+      <div class="toggle-row" (click)="toggleDisponible()" [class.toggle-active]="disponibleSeleccionado">
+        <div class="toggle-info">
+          <span class="material-symbols-outlined" style="font-size:24px"
+                [style.color]="disponibleSeleccionado ? 'var(--success)' : '#9CA3AF'">
+            {{ disponibleSeleccionado ? 'check_circle' : 'cancel' }}
+          </span>
+          <div>
+            <div class="toggle-label">
+              {{ disponibleSeleccionado ? 'Disponible para recibir solicitudes' : 'No disponible' }}
+            </div>
+            <div class="toggle-desc">
+              {{ disponibleSeleccionado
+                  ? 'Los clientes pueden enviarte solicitudes de asistencia.'
+                  : 'Tu taller no aparecerá en las asignaciones automáticas.' }}
+            </div>
+          </div>
+        </div>
 
-    <!-- Toggle visual -->
-    <div class="toggle-row" (click)="toggleDisponible()" [class.toggle-active]="disponibleSeleccionado">
-      <div class="toggle-info">
-        <span class="material-symbols-outlined" style="font-size:24px"
-              [style.color]="disponibleSeleccionado ? 'var(--success)' : '#9CA3AF'">
-          {{ disponibleSeleccionado ? 'check_circle' : 'cancel' }}
-        </span>
-        <div>
-          <div class="toggle-label">
-            {{ disponibleSeleccionado ? 'Disponible para recibir solicitudes' : 'No disponible' }}
-          </div>
-          <div class="toggle-desc">
-            {{ disponibleSeleccionado
-                ? 'Los clientes pueden enviarte solicitudes de asistencia.'
-                : 'Tu taller no aparecerá en las asignaciones automáticas.' }}
-          </div>
+        <!-- Switch -->
+        <div class="switch" [class.switch-on]="disponibleSeleccionado">
+          <div class="switch-knob"></div>
         </div>
       </div>
 
-      <!-- Switch -->
-      <div class="switch" [class.switch-on]="disponibleSeleccionado">
-        <div class="switch-knob"></div>
+      <!-- Nota informativa -->
+      @if (taller.estado !== 'aprobado') {
+        <div class="info-note" style="margin-top:1rem">
+          ⚠ Tu taller está en estado <strong>{{ taller.estado }}</strong>. Solo los talleres aprobados
+          pueden modificar su disponibilidad.
+        </div>
+      } @else if (disponibleSeleccionado && taller.tecnicos_disponibles === 0) {
+        <div class="info-note" style="margin-top:1rem">
+          ◎ No tienes técnicos disponibles actualmente. Considera registrar técnicos antes de activarte.
+        </div>
+      }
+
+      <!-- Feedback -->
+      @if (successMsg) {
+        <div class="success-banner" style="margin-top:1rem">
+          <span class="material-symbols-outlined">check_circle</span>
+          <div><strong>{{ successMsg }}</strong></div>
+        </div>
+      }
+      @if (errorMsg) {
+        <div class="alert-danger" style="margin-top:0.75rem">{{ errorMsg }}</div>
+      }
+
+      <!-- Acciones -->
+      <div class="form-actions" style="margin-top:1.5rem">
+        <button
+          class="btn-primary"
+          style="width:auto;padding:0.72rem 1.75rem;margin-top:0"
+          (click)="guardar()"
+          [disabled]="guardando || !cambioSinGuardar() || taller.estado !== 'aprobado'">
+          @if (guardando) {
+            <span class="spinner"></span>
+          } @else {
+            <span class="material-symbols-outlined" style="font-size:16px;margin-right:6px;vertical-align:middle">save</span>
+            Guardar disponibilidad
+          }
+        </button>
+
+        @if (!cambioSinGuardar() && !guardando) {
+          <span style="font-size:0.82rem;color:#9CA3AF;align-self:center">Sin cambios pendientes</span>
+        }
       </div>
     </div>
 
-    <!-- Nota informativa -->
-    @if (taller.estado !== 'aprobado') {
-      <div class="info-note" style="margin-top:1rem">
-        ⚠ Tu taller está en estado <strong>{{ taller.estado }}</strong>. Solo los talleres aprobados
-        pueden modificar su disponibilidad.
-      </div>
-    } @else if (disponibleSeleccionado && taller.tecnicos_disponibles === 0) {
-      <div class="info-note" style="margin-top:1rem">
-        ◎ No tienes técnicos disponibles actualmente. Considera registrar técnicos antes de activarte.
-      </div>
-    }
+    <!-- ── Panel 2: Cambiar Ubicación del Taller ────────────────── -->
+    <div class="form-card" style="max-width: 100%;">
+      <h2 style="font-size:1rem;font-weight:700;color:var(--text);margin-bottom:1.25rem;display:flex;align-items:center;gap:0.5rem;">
+        <span class="material-symbols-outlined" style="color: #2563EB;">location_on</span>
+        Ubicación y Georreferenciación
+      </h2>
 
-    <!-- Feedback -->
-    @if (successMsg) {
-      <div class="success-banner" style="margin-top:1rem">
-        <span class="material-symbols-outlined">check_circle</span>
-        <div><strong>{{ successMsg }}</strong></div>
+      <div class="field" style="margin-bottom: 1rem;">
+        <label for="direccion">Dirección textual del taller *</label>
+        <input id="direccion" type="text" [(ngModel)]="direccionEdit" placeholder="Ej: Av. Banzer 4to Anillo, Santa Cruz" />
       </div>
-    }
-    @if (errorMsg) {
-      <div class="alert-danger" style="margin-top:0.75rem">{{ errorMsg }}</div>
-    }
 
-    <!-- Acciones -->
-    <div class="form-actions" style="margin-top:1.5rem">
-      <button
-        class="btn-primary"
-        style="width:auto;padding:0.72rem 1.75rem;margin-top:0"
-        (click)="guardar()"
-        [disabled]="guardando || !cambioSinGuardar() || taller.estado !== 'aprobado'">
-        @if (guardando) {
-          <span class="spinner"></span>
-        } @else {
-          <span class="material-symbols-outlined" style="font-size:16px;margin-right:6px;vertical-align:middle">save</span>
-          Guardar disponibilidad
-        }
-      </button>
+      <div class="form-row" style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+        <div class="field" style="flex: 1;">
+          <label for="latitudEdit">Latitud (GPS)</label>
+          <input id="latitudEdit" type="number" step="any" [(ngModel)]="latitudEdit" placeholder="-17.7833" />
+        </div>
 
-      @if (!cambioSinGuardar() && !guardando) {
-        <span style="font-size:0.82rem;color:#9CA3AF;align-self:center">Sin cambios pendientes</span>
+        <div class="field" style="flex: 1;">
+          <label for="longitudEdit">Longitud (GPS)</label>
+          <input id="longitudEdit" type="number" step="any" [(ngModel)]="longitudEdit" placeholder="-63.1821" />
+        </div>
+      </div>
+
+      <div class="info-note" style="margin-bottom: 1.25rem;">
+        📍 Las coordenadas de tu taller se utilizan para calcular la proximidad geográfica hacia las solicitudes de auxilio de los clientes.
+      </div>
+
+      <!-- Feedback Ubicación -->
+      @if (successUbicacionMsg) {
+        <div class="success-banner" style="margin-bottom: 1rem;">
+          <span class="material-symbols-outlined">check_circle</span>
+          <div><strong>{{ successUbicacionMsg }}</strong></div>
+        </div>
       }
+      @if (errorUbicacionMsg) {
+        <div class="alert-danger" style="margin-bottom: 1rem;">{{ errorUbicacionMsg }}</div>
+      }
+
+      <div class="form-actions" style="margin-top: 1rem;">
+        <button
+          class="btn-primary"
+          style="background-color: #2563EB; width: auto; padding: 0.72rem 1.75rem;"
+          (click)="guardarUbicacion()"
+          [disabled]="guardandoUbicacion">
+          @if (guardandoUbicacion) {
+            <span class="spinner"></span>
+          } @else {
+            <span class="material-symbols-outlined" style="font-size:16px;margin-right:6px;vertical-align:middle">my_location</span>
+            Actualizar Ubicación
+          }
+        </button>
+      </div>
+
     </div>
 
   </div>

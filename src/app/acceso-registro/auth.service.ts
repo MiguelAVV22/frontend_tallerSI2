@@ -25,6 +25,7 @@ export interface RegisterPayload {
   username: string;
   full_name?: string;
   password: string;
+  tenant_id: number;
 }
 
 export interface LoginPayload {
@@ -39,6 +40,10 @@ export class AuthService {
   private readonly USER_KEY  = 'taller_user';
 
   constructor(private http: HttpClient) {}
+
+  getPublicTenants(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.API}/tenants/public`);
+  }
 
   register(payload: RegisterPayload): Observable<AuthToken> {
     return this.http

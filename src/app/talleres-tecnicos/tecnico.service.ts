@@ -8,6 +8,8 @@ export interface TecnicoCreate {
   nombre: string;
   especialidad: string;
   telefono?: string;
+  email?: string;
+  password?: string;
 }
 
 export interface TecnicoUpdate {
@@ -61,6 +63,8 @@ export interface TallerInfoResponse {
   total_tecnicos: number;
   tecnicos_disponibles: number;
   tecnicos_ocupados: number;
+  latitud?: number;
+  longitud?: number;
 }
 
 export interface AsignacionResponse {
@@ -68,11 +72,31 @@ export interface AsignacionResponse {
   incidente_id: number;
   taller_id: number;
   tecnico_id: number | null;
+  unidad_auxilio_id: number | null;
   estado: string;
   eta: number | null;
   observacion: string | null;
   created_at: string;
   es_sos: boolean;
+}
+
+export interface UnidadAuxilioCreate {
+  placa: string;
+  modelo: string;
+  tipo: string;
+  capacidad_carga_kg: number;
+}
+
+export interface UnidadAuxilioResponse {
+  id: number;
+  taller_id: number;
+  placa: string;
+  modelo: string;
+  tipo: string;
+  capacidad_carga_kg: number;
+  estado: string;
+  activo: boolean;
+  created_at: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -109,6 +133,10 @@ export class TecnicoService {
     return this.http.patch<TallerInfoResponse>(`${this.API}/disponibilidad`, { disponible }).pipe(timeout(8000));
   }
 
+  actualizarUbicacionTaller(payload: { latitud?: number; longitud?: number; direccion?: string; nombre?: string; telefono?: string }): Observable<TallerInfoResponse> {
+    return this.http.patch<TallerInfoResponse>(`${this.API}/mi-taller/ubicacion`, payload).pipe(timeout(8000));
+  }
+
   listarAsignacionesListas(): Observable<AsignacionResponse[]> {
     return this.http.get<AsignacionResponse[]>(`${this.API}/servicios/listas`).pipe(timeout(8000));
   }
@@ -136,9 +164,25 @@ export class TecnicoService {
       .pipe(timeout(8000));
   }
 
-  asignarTecnico(asignacionId: number, tecnicoId: number): Observable<AsignacionResponse> {
+  asignarTecnico(asignacionId: number, tecnicoId: number, unidadAuxilioId?: number | null): Observable<AsignacionResponse> {
+    const body: any = { tecnico_id: tecnicoId };
+    if (unidadAuxilioId) {
+      body.unidad_auxilio_id = unidadAuxilioId;
+    }
     return this.http
-      .patch<AsignacionResponse>(`${this.API}/asignaciones/${asignacionId}/asignar-tecnico`, { tecnico_id: tecnicoId })
+      .patch<AsignacionResponse>(`${this.API}/asignaciones/${asignacionId}/asignar-tecnico`, body)
       .pipe(timeout(8000));
+  }
+
+  listarUnidades(): Observable<UnidadAuxilioResponse[]> {
+    return this.http.get<UnidadAuxilioResponse[]>(`${this.API}/unidades`).pipe(timeout(8000));
+  }
+
+  registrarUnidad(data: UnidadAuxilioCreate): Observable<UnidadAuxilioResponse> {
+    return this.http.post<UnidadAuxilioResponse>(`${this.API}/unidades`, data).pipe(timeout(8000));
+  }
+
+  desactivarUnidad(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.API}/unidades/${id}`).pipe(timeout(8000));
   }
 }

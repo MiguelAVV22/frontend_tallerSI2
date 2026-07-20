@@ -1,6 +1,8 @@
 import { Routes } from '@angular/router';
 import { IniciarSesionComponent } from './acceso-registro/iniciar-sesion/iniciar-sesion.component';
 import { RegistrarseComponent } from './acceso-registro/registrarse/registrarse.component';
+import { RegistrarTallerComponent } from './acceso-registro/registrar-taller/registrar-taller.component';
+import { AprobarTalleresComponent } from './acceso-registro/aprobar-talleres/aprobar-talleres.component';
 import { RecuperarContrasenaComponent } from './acceso-registro/recuperar-contrasena/recuperar-contrasena.component';
 import { authGuard } from './core/guards/auth.guard';
 import { roleGuard } from './core/guards/role.guard';
@@ -32,6 +34,7 @@ import { CalificarServicioComponent } from './reportes/calificar-servicio/califi
 import { DashboardOperacionalComponent } from './dashboard/dashboard-operacional.component';
 import { IndicadoresKpiComponent } from './reportes/indicadores-kpi/indicadores-kpi.component';
 import { DesempenoTecnicosComponent } from './reportes/desempeno-tecnicos/desempeno-tecnicos.component';
+import { HeatmapIncidentesComponent } from './dashboard/heatmap-incidentes/heatmap-incidentes.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -50,13 +53,16 @@ export const routes: Routes = [
       // Dashboard Operacional (CU41)
       { path: 'dashboard-operacional', component: DashboardOperacionalComponent, canActivate: [roleGuard], data: { roles: ['taller'] } },
 
+      // Mapa de Calor de Incidentes (Aporte Propio)
+      { path: 'dashboard/heatmap', component: HeatmapIncidentesComponent, canActivate: [roleGuard], data: { roles: ['taller'] } },
+
       // Acceso denegado
       { path: 'acceso-denegado', component: AccesoDenegadoComponent },
 
       // Acceso y registro
       { path: 'acceso-registro/cambiar-contrasena', component: CambiarContrasenaComponent },
-      { path: 'acceso-registro/registrar-taller', component: RegistrarseComponent, canActivate: [roleGuard], data: { roles: ['taller'] } },
-      { path: 'acceso-registro/aprobar-talleres', component: RegistrarseComponent, canActivate: [roleGuard], data: { roles: ['admin'] } },
+      { path: 'acceso-registro/registrar-taller', component: RegistrarTallerComponent, canActivate: [roleGuard], data: { roles: ['cliente', 'taller'] } },
+      { path: 'acceso-registro/aprobar-talleres', component: AprobarTalleresComponent, canActivate: [roleGuard], data: { roles: ['admin'] } },
       { path: 'acceso-registro/gestionar-usuarios', component: RegistrarseComponent, canActivate: [roleGuard], data: { roles: ['admin'] } },
       { path: 'acceso-registro/gestionar-vehiculos', component: DashboardHomeComponent, canActivate: [roleGuard], data: { roles: ['cliente'] } },
 

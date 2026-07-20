@@ -5,6 +5,8 @@ import {
   TecnicoService,
   TecnicoResponse,
   AsignacionResponse,
+  UnidadAuxilioResponse,
+  UnidadAuxilioCreate,
 } from '../tecnico.service';
 
 type PanelMode = 'registrar' | 'editar' | null;
@@ -20,35 +22,47 @@ export class GestionarTecnicosComponent implements OnInit {
   // ── Datos ──────────────────────────────────────────────
   tecnicos: TecnicoResponse[] = [];
   asignaciones: AsignacionResponse[] = [];
+  unidades: UnidadAuxilioResponse[] = [];
 
   // ── Carga ──────────────────────────────────────────────
   loadingTecnicos  = false;
   loadingAsig      = false;
+  loadingUnidades  = false;
   errorTecnicos    = '';
   errorAsig        = '';
+  errorUnidades    = '';
 
   // ── Panel registro / edición ───────────────────────────
   panelMode: PanelMode = null;
   editandoId: number | null = null;
 
-  form = { nombre: '', especialidad: '', telefono: '' };
+  form = { nombre: '', especialidad: '', telefono: '', email: '', password: '' };
   guardando = false;
   formError = '';
   formSuccess = '';
 
+  // ── Panel Grúas ───────────────────────────────────────
+  formUnidad = { placa: '', modelo: '', tipo: 'grua_liviana', capacidad_carga_kg: 2000 };
+  guardandoUnidad = false;
+  unidadFormError = '';
+  unidadFormSuccess = '';
+
   // ── Asignar ────────────────────────────────────────────
   asignandoId: number | null = null;
   tecnicoSeleccionado: Record<number, number | null> = {};
+  unidadSeleccionada: Record<number, number | null> = {};
   asigMensaje: Record<number, { tipo: 'ok' | 'error'; texto: string }> = {};
 
   // ── Desactivar ─────────────────────────────────────────
   desactivando: Record<number, boolean> = {};
+  desactivandoUnidad: Record<number, boolean> = {};
 
   constructor(private svc: TecnicoService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.cargarTecnicos();
     this.cargarAsignaciones();
+    this.cargarUnidades();
   }
 
   // ── Carga de datos ─────────────────────────────────────
@@ -78,9 +92,22 @@ export class GestionarTecnicosComponent implements OnInit {
     });
   }
 
+  cargarUnidades(): void {
+    this.loadingUnidades = true;
+    this.errorUnidades = '';
+    this.svc.listarUnidades().subscribe({
+      next: (data) => { this.unidades = data; this.loadingUnidades = false; this.cdr.detectChanges(); },
+      error: (err) => {
+        this.errorUnidades = err.error?.detail ?? 'Error al cargar unidades';
+        this.loadingUnidades = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
   // ── Panel form ─────────────────────────────────────────
   abrirRegistrar(): void {
-    this.form        = { nombre: '', especialidad: '', telefono: '' };
+    this.form        = { nombre: '', especialidad: '', telefono: '', email: '', password: '' };
     this.formError   = '';
     this.formSuccess = '';
     this.editandoId  = null;
@@ -88,7 +115,7 @@ export class GestionarTecnicosComponent implements OnInit {
   }
 
   abrirEditar(t: TecnicoResponse): void {
-    this.form        = { nombre: t.nombre, especialidad: t.especialidad, telefono: t.telefono ?? '' };
+    this.form        = { nombre: t.nombre, especialidad: t.especialidad, telefono: t.telefono ?? '', email: '', password: '' };
     this.formError   = '';
     this.formSuccess = '';
     this.editandoId  = t.id;
@@ -113,6 +140,8 @@ export class GestionarTecnicosComponent implements OnInit {
       nombre:       this.form.nombre.trim(),
       especialidad: this.form.especialidad.trim(),
       telefono:     this.form.telefono.trim() || undefined,
+      email:        this.form.email.trim() || undefined,
+      password:     this.form.password.trim() || undefined,
     };
 
     if (this.panelMode === 'registrar') {
@@ -168,12 +197,15 @@ export class GestionarTecnicosComponent implements OnInit {
   asignar(asig: AsignacionResponse): void {
     const tecnicoId = this.tecnicoSeleccionado[asig.id];
     if (!tecnicoId) { this.asigMensaje[asig.id] = { tipo: 'error', texto: 'Selecciona un técnico' }; return; }
+    
+    const unidadId = this.unidadSeleccionada[asig.id] || null;
     this.asignandoId = asig.id;
 
-    this.svc.asignarTecnico(asig.id, tecnicoId).subscribe({
+    this.svc.asignarTecnico(asig.id, tecnicoId, unidadId).subscribe({
       next: () => {
         this.asignaciones = this.asignaciones.filter((a) => a.id !== asig.id);
         this.cargarTecnicos();
+        this.cargarUnidades();
         this.asignandoId = null;
         this.cdr.detectChanges();
       },
@@ -185,12 +217,70 @@ export class GestionarTecnicosComponent implements OnInit {
     });
   }
 
+  // ── Unidades de Auxilio CRUD ───────────────────────────
+  guardarUnidad(): void {
+    if (!this.formUnidad.placa.trim() || !this.formUnidad.modelo.trim() || !this.formUnidad.tipo.trim()) {
+      this.unidadFormError = 'Placa, modelo y tipo son obligatorios';
+      return;
+    }
+    if (this.formUnidad.capacidad_carga_kg <= 0) {
+      this.unidadFormError = 'La capacidad de carga debe ser mayor a 0 kg';
+      return;
+    }
+
+    this.guardandoUnidad = true;
+    this.unidadFormError = '';
+    this.unidadFormSuccess = '';
+
+    const payload: UnidadAuxilioCreate = {
+      placa: this.formUnidad.placa.trim().toUpperCase(),
+      modelo: this.formUnidad.modelo.trim(),
+      tipo: this.formUnidad.tipo.trim(),
+      capacidad_carga_kg: this.formUnidad.capacidad_carga_kg,
+    };
+
+    this.svc.registrarUnidad(payload).subscribe({
+      next: (nueva) => {
+        this.unidades = [nueva, ...this.unidades];
+        this.unidadFormSuccess = 'Unidad registrada correctamente';
+        this.guardandoUnidad = false;
+        this.formUnidad = { placa: '', modelo: '', tipo: 'grua_liviana', capacidad_carga_kg: 2000 };
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.unidadFormError = err.error?.detail ?? 'Error al registrar unidad';
+        this.guardandoUnidad = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  desactivarUnidad(u: UnidadAuxilioResponse): void {
+    if (!confirm(`¿Dar de baja la unidad con placa ${u.placa}?`)) return;
+    this.desactivandoUnidad[u.id] = true;
+    this.svc.desactivarUnidad(u.id).subscribe({
+      next: () => {
+        this.unidades = this.unidades.filter((x) => x.id !== u.id);
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.desactivandoUnidad[u.id] = false;
+        alert(err.error?.detail ?? 'Error al desactivar unidad');
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
   // ── Helpers ────────────────────────────────────────────
   badgeEstado(estado: string): string {
-    return { disponible: 'badge-success', ocupado: 'badge-warning', inactivo: 'badge-muted' }[estado] ?? 'badge-muted';
+    return { disponible: 'badge-success', ocupado: 'badge-warning', mantenimiento: 'badge-danger' }[estado] ?? 'badge-muted';
   }
 
   get disponibles(): TecnicoResponse[] {
     return this.tecnicos.filter((t) => t.estado === 'disponible');
+  }
+
+  get unidadesDisponibles(): UnidadAuxilioResponse[] {
+    return this.unidades.filter((u) => u.estado === 'disponible');
   }
 }

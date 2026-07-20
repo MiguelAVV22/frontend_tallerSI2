@@ -70,7 +70,9 @@
       </div>
 
       @if (serverError) {
-        <span class="server-error">{{ serverError }}</span>
+        <div class="alert-danger" style="margin-top: 1rem; margin-bottom: 1rem;">
+          ⚠️ {{ serverError }}
+        </div>
       }
 
       <div class="form-actions">

@@ -68,4 +68,8 @@ export class MetricasService {
     }
     return this.http.get<TecnicoDesempenoResponse[]>(url).pipe(timeout(8000));
   }
+
+  getHeatmapData(): Observable<{lat: number, lng: number}[]> {
+    return this.http.get<{lat: number, lng: number}[]>(`${this.API}/heatmap`).pipe(timeout(8000));
+  }
 }

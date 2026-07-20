@@ -41,10 +41,23 @@
       </div>
     </div>
 
-    <div class="field" style="max-width:340px">
-      <label for="telefono">Teléfono <span style="color:#9CA3AF">(opcional)</span></label>
-      <input id="telefono" type="tel" [(ngModel)]="form.telefono" placeholder="+591 7XXXXXXX" />
+    <div class="form-row">
+      <div class="field">
+        <label for="telefono">Teléfono <span style="color:#9CA3AF">(opcional)</span></label>
+        <input id="telefono" type="tel" [(ngModel)]="form.telefono" placeholder="+591 7XXXXXXX" />
+      </div>
+      <div class="field">
+        <label for="email">Correo de Acceso Móvil <span style="color:#9CA3AF">(opcional)</span></label>
+        <input id="email" type="email" [(ngModel)]="form.email" placeholder="tecnico&#64;taller.com" />
+      </div>
     </div>
+
+    @if (panelMode === 'registrar') {
+      <div class="field" style="max-width: 340px; margin-bottom: 1rem;">
+        <label for="password">Contraseña para App Móvil <span style="color:#9CA3AF">(opcional)</span></label>
+        <input id="password" type="password" [(ngModel)]="form.password" placeholder="••••••••" />
+      </div>
+    }
 
     @if (formError) {
       <div class="alert-danger">{{ formError }}</div>
@@ -183,7 +196,7 @@
               @if (asigMensaje[asig.id]; as msg) {
                 <span [class]="msg.tipo === 'ok' ? 'server-success' : 'server-error'">{{ msg.texto }}</span>
               } @else {
-                <div style="display:flex;gap:0.5rem;align-items:center">
+                <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
                   <select
                     style="padding:0.5rem 0.75rem;border:1.5px solid #E5E7EB;border-radius:8px;font-size:0.82rem;color:var(--text);outline:none;background:#fff;min-width:170px"
                     [(ngModel)]="tecnicoSeleccionado[asig.id]">
@@ -192,6 +205,16 @@
                       <option [ngValue]="t.id">{{ t.nombre }} · {{ t.especialidad }}</option>
                     }
                   </select>
+
+                  <select
+                    style="padding:0.5rem 0.75rem;border:1.5px solid #E5E7EB;border-radius:8px;font-size:0.82rem;color:var(--text);outline:none;background:#fff;min-width:170px"
+                    [(ngModel)]="unidadSeleccionada[asig.id]">
+                    <option [ngValue]="null" selected>— Sin grúa / unidad —</option>
+                    @for (u of unidadesDisponibles; track u.id) {
+                      <option [ngValue]="u.id">{{ u.placa }} ({{ u.modelo }}) · Cap: {{ u.capacidad_carga_kg }} kg</option>
+                    }
+                  </select>
+
                   <button
                     class="btn-approve"
                     (click)="asignar(asig)"
@@ -204,6 +227,119 @@
                   </button>
                 </div>
               }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}
+
+<!-- ── Sección Grúas / Unidades de Auxilio (Aporte Propio) ───────────────── -->
+<div class="page-header" style="margin-top: 3rem; margin-bottom: 1rem">
+  <div>
+    <h2 style="font-size:1.1rem;font-weight:700;color:var(--text)">Gestionar Grúas y Unidades de Auxilio</h2>
+    <p class="page-sub">Aporte Propio · Registra tus unidades de asistencia vial y controla su capacidad de carga</p>
+  </div>
+</div>
+
+<!-- Formulario para Registrar Unidad -->
+<div class="form-card" style="max-width:100%;margin-bottom:1.75rem">
+  <h3 style="font-size:0.95rem;font-weight:700;color:var(--text);margin-bottom:1rem">Registrar nueva unidad / grúa</h3>
+  <div class="form-row">
+    <div class="field">
+      <label for="placa_u">Placa *</label>
+      <input id="placa_u" type="text" [(ngModel)]="formUnidad.placa" placeholder="Ej. 123-ABC" />
+    </div>
+    <div class="field">
+      <label for="modelo_u">Modelo / Marca *</label>
+      <input id="modelo_u" type="text" [(ngModel)]="formUnidad.modelo" placeholder="Ej. Ford F-350" />
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="field">
+      <label for="tipo_u">Tipo de Unidad *</label>
+      <select id="tipo_u" [(ngModel)]="formUnidad.tipo" style="padding:0.6rem 0.75rem;border:1.5px solid #E5E7EB;border-radius:8px;font-size:0.88rem;color:var(--text);outline:none;background:#fff;width:100%">
+        <option value="moto_remolque">Moto Remolque (Liviana - Motos)</option>
+        <option value="grua_liviana">Grúa de Remolque (Autos Sedán)</option>
+        <option value="grua_plataforma_pesada">Grúa de Plataforma Pesada (Camiones/Camionetas)</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="capacidad_u">Capacidad de carga (Kg) *</label>
+      <input id="capacidad_u" type="number" [(ngModel)]="formUnidad.capacidad_carga_kg" placeholder="Ej. 2000" />
+    </div>
+  </div>
+
+  @if (unidadFormError) {
+    <div class="alert-danger" style="margin-top:0.75rem">{{ unidadFormError }}</div>
+  }
+  @if (unidadFormSuccess) {
+    <div class="success-banner" style="margin-top:0.75rem">
+      <span class="material-symbols-outlined">check_circle</span>
+      <div><strong>{{ unidadFormSuccess }}</strong></div>
+    </div>
+  }
+
+  <div class="form-actions" style="margin-top:1rem">
+    <button class="btn-primary" style="width:auto;padding:0.72rem 1.75rem;margin-top:0"
+            (click)="guardarUnidad()" [disabled]="guardandoUnidad">
+      @if (guardandoUnidad) {
+        <span class="spinner"></span>
+      } @else {
+        Registrar Unidad
+      }
+    </button>
+  </div>
+</div>
+
+<!-- Tabla de Unidades registradas -->
+@if (loadingUnidades) {
+  <div class="loading-row">
+    <span class="spinner-dark"></span> Cargando unidades...
+  </div>
+} @else if (unidades.length === 0) {
+  <div class="empty-state">
+    <span class="material-symbols-outlined" style="font-size:40px;color:#9CA3AF">local_shipping</span>
+    <p>No tienes grúas ni unidades de auxilio registradas.</p>
+  </div>
+} @else {
+  <div class="table-card">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Placa</th>
+          <th>Modelo</th>
+          <th>Tipo</th>
+          <th>Capacidad Máxima</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (u of unidades; track u.id) {
+          <tr>
+            <td class="td-id"><strong>{{ u.placa }}</strong></td>
+            <td class="td-name">{{ u.modelo }}</td>
+            <td>
+              @if (u.tipo === 'moto_remolque') { Moto Remolque }
+              @else if (u.tipo === 'grua_liviana') { Grúa Liviana }
+              @else if (u.tipo === 'grua_plataforma_pesada') { Grúa Pesada (Plataforma) }
+              @else { {{ u.tipo }} }
+            </td>
+            <td>{{ u.capacidad_carga_kg | number }} kg</td>
+            <td>
+              <span class="badge" [ngClass]="badgeEstado(u.estado)">{{ u.estado }}</span>
+            </td>
+            <td class="td-actions">
+              <button class="btn-reject" (click)="desactivarUnidad(u)" [disabled]="desactivandoUnidad[u.id]">
+                @if (desactivandoUnidad[u.id]) {
+                  <span class="spinner" style="border-color:rgba(153,27,27,0.3);border-top-color:#991B1B"></span>
+                } @else {
+                  <span class="material-symbols-outlined" style="font-size:14px;margin-right:4px;vertical-align:middle">delete</span>
+                  Baja
+                }
+              </button>
             </td>
           </tr>
         }

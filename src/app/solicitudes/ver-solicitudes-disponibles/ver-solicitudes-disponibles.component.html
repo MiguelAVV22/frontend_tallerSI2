@@ -156,13 +156,18 @@
           }
 
           <h3 style="font-size:0.88rem;font-weight:700;color:var(--text);margin:0 0 0.5rem">Ubicación</h3>
-          <p style="margin:0 0 1rem;font-size:0.9rem;color:#374151">
+          <p style="margin:0 0 0.5rem;font-size:0.9rem;color:#374151">
             @if (seleccion.latitud !== null && seleccion.longitud !== null) {
               {{ seleccion.latitud | number:'1.5-5' }}, {{ seleccion.longitud | number:'1.5-5' }}
             } @else {
               <span style="color:#EF4444;font-style:italic">Sin GPS — contactar por chat.</span>
             }
           </p>
+
+          <!-- Mapa gráfico de distancia -->
+          @if (seleccion.latitud !== null && seleccion.longitud !== null) {
+            <div id="map-distancia" style="height: 250px; border-radius: 8px; border: 1px solid #D1D5DB; margin-bottom: 1rem; z-index: 1;"></div>
+          }
 
           <h3 style="font-size:0.88rem;font-weight:700;color:var(--text);margin:0 0 0.5rem">Descripción</h3>
           <p style="margin:0 0 1rem;font-size:0.9rem;color:#374151;white-space:pre-wrap">

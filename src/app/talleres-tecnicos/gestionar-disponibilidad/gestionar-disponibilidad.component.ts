@@ -1,17 +1,26 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { TecnicoService, TallerInfoResponse } from '../tecnico.service';
 
 @Component({
   selector: 'app-gestionar-disponibilidad',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './gestionar-disponibilidad.component.html',
 })
 export class GestionarDisponibilidadComponent implements OnInit {
 
   taller: TallerInfoResponse | null = null;
   disponibleSeleccionado = false;
+
+  // Formulario de edición de ubicación del taller
+  direccionEdit = '';
+  latitudEdit: number | null = null;
+  longitudEdit: number | null = null;
+  guardandoUbicacion = false;
+  successUbicacionMsg = '';
+  errorUbicacionMsg = '';
 
   loading    = false;
   guardando  = false;
@@ -31,6 +40,9 @@ export class GestionarDisponibilidadComponent implements OnInit {
       next: (data) => {
         this.taller                 = data;
         this.disponibleSeleccionado = data.disponible;
+        this.direccionEdit          = data.direccion || '';
+        this.latitudEdit            = data.latitud ?? null;
+        this.longitudEdit           = data.longitud ?? null;
         this.loading                = false;
         this.cdr.detectChanges();
       },
@@ -63,6 +75,34 @@ export class GestionarDisponibilidadComponent implements OnInit {
       error: (err) => {
         this.errorMsg  = err.error?.detail ?? 'Error al actualizar la disponibilidad';
         this.guardando = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  guardarUbicacion(): void {
+    this.guardandoUbicacion = true;
+    this.errorUbicacionMsg   = '';
+    this.successUbicacionMsg = '';
+
+    this.svc.actualizarUbicacionTaller({
+      direccion: this.direccionEdit,
+      latitud:   this.latitudEdit !== null && this.latitudEdit !== undefined ? Number(this.latitudEdit) : undefined,
+      longitud:  this.longitudEdit !== null && this.longitudEdit !== undefined ? Number(this.longitudEdit) : undefined,
+    }).subscribe({
+      next: (data) => {
+        this.taller = data;
+        this.direccionEdit = data.direccion;
+        this.latitudEdit = data.latitud ?? null;
+        this.longitudEdit = data.longitud ?? null;
+        this.successUbicacionMsg = 'Ubicación y dirección del taller actualizadas correctamente.';
+        this.guardandoUbicacion = false;
+        this.cdr.detectChanges();
+        setTimeout(() => { this.successUbicacionMsg = ''; this.cdr.detectChanges(); }, 3500);
+      },
+      error: (err) => {
+        this.errorUbicacionMsg = err.error?.detail ?? 'Error al actualizar la ubicación';
+        this.guardandoUbicacion = false;
         this.cdr.detectChanges();
       },
     });

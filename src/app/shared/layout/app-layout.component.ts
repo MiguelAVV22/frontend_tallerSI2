@@ -96,6 +96,7 @@ export class AppLayoutComponent {
         { label: 'Métricas Taller',     route: '/app/reportes/metricas-taller',     roles: ['taller'] },
         { label: 'Indicadores KPI',     route: '/app/reportes/indicadores-kpi',     roles: ['taller'] },
         { label: 'Desempeño Técnicos',  route: '/app/reportes/desempeno-tecnicos',  roles: ['taller'] },
+        { label: 'Mapa de Calor SOS',   route: '/app/dashboard/heatmap',            roles: ['taller'] },
         { label: 'Métricas Globales',   route: '/app/reportes/metricas-globales',   roles: ['admin'] },
         { label: 'Auditoría',           route: '/app/reportes/auditoria',           roles: ['admin'] },
       ],
