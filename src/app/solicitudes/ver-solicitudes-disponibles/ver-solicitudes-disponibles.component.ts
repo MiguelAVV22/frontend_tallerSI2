@@ -221,8 +221,14 @@ export class VerSolicitudesDisponiblesComponent implements OnInit, OnDestroy {
   }
 
   fotoFullUrl(path: string): string {
-    if (path.startsWith('http')) return path;
-    return `${environment.apiUrl}${path.startsWith('/') ? '' : '/'}${path}`;
+    if (!path) return '';
+    let finalPath = path;
+    if (path.includes('/uploads/')) {
+      const parts = path.split('/uploads/');
+      finalPath = '/uploads/' + parts[1];
+    }
+    if (finalPath.startsWith('http')) return finalPath;
+    return `${environment.apiUrl}${finalPath.startsWith('/') ? '' : '/'}${finalPath}`;
   }
 
   scoreLabel(score: number): string {

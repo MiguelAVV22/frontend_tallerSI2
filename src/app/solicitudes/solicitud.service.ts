@@ -51,6 +51,7 @@ export interface SolicitudDisponible {
   estado: string;
   fotos_urls: string[];
   tiene_audio: boolean;
+  audio_url: string | null;
   created_at: string;
   es_sos: boolean;
   distancia_km: number | null;   // §4.6 Motor IA

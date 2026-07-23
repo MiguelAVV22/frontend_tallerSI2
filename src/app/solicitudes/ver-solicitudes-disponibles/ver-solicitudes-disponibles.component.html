@@ -187,7 +187,15 @@
                 }
               </div>
             }
-            @if (seleccion.tiene_audio) {
+            @if (seleccion.tiene_audio && seleccion.audio_url) {
+              <div style="margin-top: 0.75rem;">
+                <p style="font-size:0.85rem;color:#6366F1;margin-bottom:0.35rem;font-weight:600">
+                  <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;margin-right:4px">mic</span>
+                  Escuchar audio explicativo de auxilio:
+                </p>
+                <audio [src]="fotoFullUrl(seleccion.audio_url)" controls style="width: 100%; outline: none; height: 36px; border-radius: 6px;"></audio>
+              </div>
+            } @else if (seleccion.tiene_audio) {
               <p style="font-size:0.85rem;color:#6366F1;margin-top:0.5rem">
                 <span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle">mic</span>
                 Audio adjunto (ver desde la app móvil)
